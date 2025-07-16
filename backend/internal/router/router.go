@@ -20,9 +20,24 @@ func SetupRouter(searchHandler *handlers.SearchHandler) *chi.Mux {
 
 	// CORS configuration
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{
+			"Accept",
+			"Accept-Language",
+			"Access-Control-Request-Headers",
+			"Access-Control-Request-Method",
+			"Connection",
+			"Content-Type",
+			"Origin",
+			"Referer",
+			"Sec-Fetch-Dest",
+			"Sec-Fetch-Mode",
+			"Sec-Fetch-Site",
+			"User-Agent",
+			"sec-ch-ua-platform",
+			"sec-ch-ua",
+			"sec-ch-ua-mobile"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
