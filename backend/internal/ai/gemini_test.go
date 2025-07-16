@@ -39,8 +39,7 @@ func TestGeminiServiceMethods(t *testing.T) {
 
 	t.Run("AnalyzeQueryInterface", func(t *testing.T) {
 		// Test that the interface is properly defined
-		var service AIServiceInterface
-		service = NewMockAIService() // Use mock for actual testing
+		service := NewMockAIService() // Use mock for actual testing
 
 		articles := []models.Article{
 			{ID: 1, Title: "Test Article", Content: "Test content"},

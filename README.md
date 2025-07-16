@@ -406,6 +406,23 @@ event-to-insight/
 └── README.md             # This file
 ```
 
+## HOW can we improve this further 
+
+### backend
+
+1. Adopt PostgreSQL
+2. Restructure Codebase
+3. adding auth layer after few free requests
+4. we can also utialze opsenserach-based or vactor base dsearch so that we can give AI more filter context/Articles OR we can build own model based on exisitng model by giving our context on every new Article
+
+
+### frontend
+
+1. By making more sutaiable UX
+2. by adding animation
+3. Restructure Codebase
+
+
 ## 🤝 Contributing
 
 1. **Code Style**: Follow Go and TypeScript best practices

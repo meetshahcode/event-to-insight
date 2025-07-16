@@ -71,3 +71,11 @@ go.work
 # Data directories (comment out if you want to keep data)
 data/
 /data/
+
+
+test-results/
+*.test.js
+*.test.ts
+
+
+playwright-report
