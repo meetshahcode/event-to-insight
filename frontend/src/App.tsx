@@ -8,16 +8,26 @@ import { HelpCircle, Github, Server } from 'lucide-react';
 function App() {
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string>('');
+  const [noResultsMessage, setNoResultsMessage] = useState<string>('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSearchResult = (result: SearchResponse) => {
     setSearchResult(result);
     setError('');
+    setNoResultsMessage('');
   };
 
   const handleSearchError = (errorMessage: string) => {
     setError(errorMessage);
+    setSearchResult(null);
+    setNoResultsMessage('');
+  };
+
+  const handleNoResults = (message: string) => {
+    console.log('No results found:', message);
+    setNoResultsMessage(message);
+    setError('');
     setSearchResult(null);
   };
 
@@ -61,7 +71,7 @@ function App() {
                 <span>API Status</span>
               </a>
               <a
-                href="https://github.com"
+                href="https://github.com/meetshahcode/event-to-insight"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600"
@@ -77,7 +87,7 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
-        {!searchResult && !error && (
+        {!searchResult && !error && !noResultsMessage && (
           <div className="text-center py-12">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -109,6 +119,7 @@ function App() {
           <SearchBar 
             onSearchResult={handleSearchResult}
             onSearchError={handleSearchError}
+            onNoResults={handleNoResults}
           />
         </div>
 
@@ -123,6 +134,24 @@ function App() {
                   </h3>
                   <div className="mt-2 text-sm text-red-700">
                     {error}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Results Message */}
+        {noResultsMessage && (
+          <div className="mb-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    No Results Found
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    {noResultsMessage}
                   </div>
                 </div>
               </div>

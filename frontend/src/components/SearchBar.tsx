@@ -5,9 +5,10 @@ import { searchAPI, SearchResponse } from '../services/api';
 interface SearchBarProps {
   onSearchResult: (result: SearchResponse) => void;
   onSearchError: (error: string) => void;
+  onNoResults: (message: string) => void;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearchResult, onSearchError }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSearchResult, onSearchError, onNoResults }) => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,8 +23,14 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearchResult, onSearchError }) 
     setIsLoading(true);
     try {
       const result = await searchAPI.searchQuery(query.trim());
-      onSearchResult(result);
-      onSearchError(''); // Clear any previous errors
+      
+      // Check if this is a "no results found" response
+      if (result.ai_relevant_articles.length === 0 && 
+          result.ai_summary_answer.includes("couldn't find specific information")) {
+        onNoResults(result.ai_summary_answer);
+      } else {
+        onSearchResult(result);
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
