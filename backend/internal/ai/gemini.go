@@ -40,7 +40,8 @@ func NewGeminiService(apiKey string) (*GeminiService, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	model := client.GenerativeModel("gemini-pro")
+	// model := client.GenerativeModel("gemini-pro")
+	model := client.GenerativeModel("gemini-2.0-flash")
 
 	return &GeminiService{
 		client: client,
