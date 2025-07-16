@@ -9,7 +9,7 @@ import (
 
 func TestMockAIService(t *testing.T) {
 	service := NewMockAIService()
-	
+
 	articles := []models.Article{
 		{ID: 1, Title: "Password Reset", Content: "Instructions for password reset"},
 		{ID: 2, Title: "VPN Setup", Content: "How to configure VPN connection"},

@@ -18,11 +18,11 @@ type Query struct {
 
 // SearchResult represents the result of a search query
 type SearchResult struct {
-	ID                int       `json:"id" db:"id"`
-	QueryID           int       `json:"query_id" db:"query_id"`
-	AISummaryAnswer   string    `json:"ai_summary_answer" db:"ai_summary_answer"`
-	AIRelevantArticles []int    `json:"ai_relevant_articles"` // JSON array in DB
-	CreatedAt         time.Time `json:"created_at" db:"created_at"`
+	ID                 int       `json:"id" db:"id"`
+	QueryID            int       `json:"query_id" db:"query_id"`
+	AISummaryAnswer    string    `json:"ai_summary_answer" db:"ai_summary_answer"`
+	AIRelevantArticles []int     `json:"ai_relevant_articles"` // JSON array in DB
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 }
 
 // SearchRequest represents the incoming search request

@@ -16,14 +16,14 @@ func NewMockAIService() *MockAIService {
 // AnalyzeQuery provides mock analysis of queries
 func (m *MockAIService) AnalyzeQuery(query string, articles []models.Article) (*AIAnalysisResult, error) {
 	query = strings.ToLower(query)
-	
+
 	var relevantArticles []int
 	var summary string
 
 	// Simple keyword matching logic for mock
 	for _, article := range articles {
 		articleText := strings.ToLower(article.Title + " " + article.Content)
-		
+
 		if strings.Contains(query, "password") && strings.Contains(articleText, "password") {
 			relevantArticles = append(relevantArticles, article.ID)
 		} else if strings.Contains(query, "vpn") && strings.Contains(articleText, "vpn") {

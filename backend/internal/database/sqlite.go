@@ -89,43 +89,43 @@ func (s *SQLiteDB) seedArticles() error {
 
 	articles := []models.Article{
 		{
-			Title: "Password Reset Instructions",
+			Title:   "Password Reset Instructions",
 			Content: "To reset your password: 1) Go to the login page 2) Click 'Forgot Password' 3) Enter your email address 4) Check your email for reset instructions 5) Follow the link and create a new password. The reset link expires in 24 hours.",
 		},
 		{
-			Title: "VPN Connection Setup",
+			Title:   "VPN Connection Setup",
 			Content: "Setting up VPN connection: 1) Download the VPN client from the IT portal 2) Install using admin credentials 3) Use your domain username and password 4) Connect to the 'Corporate-Main' server 5) Verify connection by accessing internal resources. Contact IT if you experience connectivity issues.",
 		},
 		{
-			Title: "Software Installation Guidelines",
+			Title:   "Software Installation Guidelines",
 			Content: "For software installation: 1) Check the approved software list on the IT portal 2) Submit a software request ticket if not approved 3) Admin rights are required for installation 4) IT will remotely install if you don't have admin access 5) All installations must be from official vendors only.",
 		},
 		{
-			Title: "Email Configuration Troubleshooting",
+			Title:   "Email Configuration Troubleshooting",
 			Content: "Email setup issues: 1) Verify server settings - IMAP: mail.company.com port 993 SSL, SMTP: mail.company.com port 587 STARTTLS 2) Check username format: firstname.lastname@company.com 3) Ensure password is current 4) Clear email cache and restart client 5) For mobile devices, use app-specific passwords.",
 		},
 		{
-			Title: "Multi-Factor Authentication Setup",
+			Title:   "Multi-Factor Authentication Setup",
 			Content: "MFA setup process: 1) Install Microsoft Authenticator app 2) Log into company portal 3) Navigate to Security Settings 4) Click 'Add Authentication Method' 5) Scan QR code with authenticator app 6) Enter verification code 7) MFA is now required for all company logins.",
 		},
 		{
-			Title: "Printer Connection Issues",
+			Title:   "Printer Connection Issues",
 			Content: "Printer troubleshooting: 1) Ensure printer is connected to corporate network 2) Install latest printer drivers from manufacturer website 3) Add printer using IP address: 192.168.1.100 4) Check print queue for stuck jobs 5) Restart print spooler service if needed 6) For Mac users, use CUPS interface.",
 		},
 		{
-			Title: "File Share Access Problems",
+			Title:   "File Share Access Problems",
 			Content: "File share access: 1) Connect using \\\\fileserver\\shared 2) Use domain credentials when prompted 3) Map network drive for easier access 4) Check group membership for folder permissions 5) Clear credential cache if authentication fails 6) Contact IT for permission changes.",
 		},
 		{
-			Title: "Remote Desktop Configuration",
+			Title:   "Remote Desktop Configuration",
 			Content: "Remote desktop setup: 1) Enable Remote Desktop on target computer 2) Add user to 'Remote Desktop Users' group 3) Configure firewall to allow RDP (port 3389) 4) Use Computer Name or IP address to connect 5) For external access, use VPN first 6) Use Network Level Authentication for security.",
 		},
 		{
-			Title: "Antivirus Software Management",
+			Title:   "Antivirus Software Management",
 			Content: "Antivirus management: 1) Corporate antivirus is automatically deployed 2) Do not install additional antivirus software 3) Scans run automatically daily at 2 AM 4) Quarantine notifications appear in system tray 5) Report false positives to IT immediately 6) Never disable real-time protection.",
 		},
 		{
-			Title: "Data Backup and Recovery",
+			Title:   "Data Backup and Recovery",
 			Content: "Backup procedures: 1) OneDrive syncs user documents automatically 2) Critical data should be stored in designated share folders 3) Personal desktop/downloads are not backed up 4) File recovery available for 90 days 5) For urgent recovery, submit priority ticket 6) Test restore procedures quarterly.",
 		},
 	}

@@ -21,13 +21,13 @@ func setupTestHandler(t *testing.T) (*SearchHandler, func()) {
 	dbPath := "test_handler.db"
 	db, err := database.NewSQLiteDB(dbPath)
 	require.NoError(t, err)
-	
+
 	err = db.Initialize()
 	require.NoError(t, err)
 
 	// Use mock AI service
 	aiService := ai.NewMockAIService()
-	
+
 	// Create services and handler
 	searchService := service.NewSearchService(db, aiService)
 	handler := NewSearchHandler(searchService)
@@ -48,7 +48,7 @@ func TestSearchHandler_SearchQuery(t *testing.T) {
 		requestBody := models.SearchRequest{
 			Query: "How do I reset my password?",
 		}
-		
+
 		body, err := json.Marshal(requestBody)
 		require.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestSearchHandler_SearchQuery(t *testing.T) {
 		handler.SearchQuery(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response models.SearchResponse
 		err = json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestSearchHandler_SearchQuery(t *testing.T) {
 		requestBody := models.SearchRequest{
 			Query: "",
 		}
-		
+
 		body, err := json.Marshal(requestBody)
 		require.NoError(t, err)
 
@@ -105,7 +105,7 @@ func TestSearchHandler_GetAllArticles(t *testing.T) {
 	handler.GetAllArticles(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var articles []models.Article
 	err := json.Unmarshal(w.Body.Bytes(), &articles)
 	assert.NoError(t, err)
@@ -122,7 +122,7 @@ func TestSearchHandler_HealthCheck(t *testing.T) {
 	handler.HealthCheck(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	var response map[string]string
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)

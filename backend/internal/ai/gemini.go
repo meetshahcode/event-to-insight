@@ -115,13 +115,13 @@ Now analyze the user's query:`, articlesContext, query)
 // parseResponse parses the AI response to extract summary and relevant articles
 func (g *GeminiService) parseResponse(response string, articles []models.Article) (*AIAnalysisResult, error) {
 	lines := strings.Split(response, "\n")
-	
+
 	var summary string
 	var relevantArticleIDs []int
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if strings.HasPrefix(line, "SUMMARY:") {
 			summary = strings.TrimSpace(strings.TrimPrefix(line, "SUMMARY:"))
 		} else if strings.HasPrefix(line, "RELEVANT_ARTICLES:") {
