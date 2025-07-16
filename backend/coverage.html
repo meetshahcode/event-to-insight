@@ -1,0 +1,1012 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">event-to-insight/cmd/main.go (0.0%)</option>
+				
+				<option value="file1">event-to-insight/internal/ai/gemini.go (0.0%)</option>
+				
+				<option value="file2">event-to-insight/internal/ai/mock.go (79.4%)</option>
+				
+				<option value="file3">event-to-insight/internal/config/config.go (0.0%)</option>
+				
+				<option value="file4">event-to-insight/internal/database/sqlite.go (77.9%)</option>
+				
+				<option value="file5">event-to-insight/internal/handlers/search.go (60.0%)</option>
+				
+				<option value="file6">event-to-insight/internal/router/router.go (0.0%)</option>
+				
+				<option value="file7">event-to-insight/internal/service/search.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "event-to-insight/internal/ai"
+        "event-to-insight/internal/config"
+        "event-to-insight/internal/database"
+        "event-to-insight/internal/handlers"
+        "event-to-insight/internal/router"
+        "event-to-insight/internal/service"
+        "log"
+        "net/http"
+)
+
+func main() <span class="cov0" title="0">{
+        // Load configuration
+        cfg := config.LoadConfig()
+
+        // Initialize database
+        db, err := database.NewSQLiteDB(cfg.DBPath)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to initialize database: %v", err)
+        }</span>
+        <span class="cov0" title="0">defer db.Close()
+
+        if err := db.Initialize(); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to initialize database schema: %v", err)
+        }</span>
+
+        // Initialize AI service
+        <span class="cov0" title="0">var aiService ai.AIServiceInterface
+        if cfg.UseMockAI || cfg.GeminiKey == "" </span><span class="cov0" title="0">{
+                log.Println("Using Mock AI service")
+                aiService = ai.NewMockAIService()
+        }</span> else<span class="cov0" title="0"> {
+                log.Println("Using Gemini AI service")
+                aiService, err = ai.NewGeminiService(cfg.GeminiKey)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("Failed to initialize Gemini AI service: %v", err)
+                }</span>
+        }
+
+        // Initialize services
+        <span class="cov0" title="0">searchService := service.NewSearchService(db, aiService)
+
+        // Initialize handlers
+        searchHandler := handlers.NewSearchHandler(searchService)
+
+        // Setup router
+        r := router.SetupRouter(searchHandler)
+
+        // Start server
+        log.Printf("Server starting on port %s", cfg.Port)
+        log.Printf("Using database: %s", cfg.DBPath)
+        log.Printf("Health check: http://localhost:%s/api/health", cfg.Port)
+
+        if err := http.ListenAndServe(":"+cfg.Port, r); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Server failed to start: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package ai
+
+import (
+        "context"
+        "event-to-insight/internal/models"
+        "fmt"
+        "strconv"
+        "strings"
+
+        "github.com/google/generative-ai-go/genai"
+        "google.golang.org/api/option"
+)
+
+// AIServiceInterface defines the contract for AI operations
+type AIServiceInterface interface {
+        AnalyzeQuery(query string, articles []models.Article) (*AIAnalysisResult, error)
+}
+
+// AIAnalysisResult represents the result of AI analysis
+type AIAnalysisResult struct {
+        Summary          string
+        RelevantArticles []int
+}
+
+// GeminiService implements AIServiceInterface using Google's Gemini AI
+type GeminiService struct {
+        client *genai.Client
+        model  *genai.GenerativeModel
+}
+
+// NewGeminiService creates a new Gemini AI service
+func NewGeminiService(apiKey string) (*GeminiService, error) <span class="cov0" title="0">{
+        if apiKey == "" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("API key is required")
+        }</span>
+
+        <span class="cov0" title="0">ctx := context.Background()
+        client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+        }</span>
+
+        // model := client.GenerativeModel("gemini-pro")
+        <span class="cov0" title="0">model := client.GenerativeModel("gemini-2.0-flash")
+
+        return &amp;GeminiService{
+                client: client,
+                model:  model,
+        }, nil</span>
+}
+
+// AnalyzeQuery analyzes the user query against available articles
+func (g *GeminiService) AnalyzeQuery(query string, articles []models.Article) (*AIAnalysisResult, error) <span class="cov0" title="0">{
+        ctx := context.Background()
+
+        // Build the knowledge base context
+        articlesContext := g.buildArticlesContext(articles)
+
+        // Create the prompt
+        prompt := g.buildPrompt(query, articlesContext)
+
+        // Generate response
+        resp, err := g.model.GenerateContent(ctx, genai.Text(prompt))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to generate content: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("no response generated")
+        }</span>
+
+        // Parse the response
+        <span class="cov0" title="0">responseText := fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0])
+        return g.parseResponse(responseText, articles)</span>
+}
+
+// buildArticlesContext creates a formatted string of all articles
+func (g *GeminiService) buildArticlesContext(articles []models.Article) string <span class="cov0" title="0">{
+        var builder strings.Builder
+        builder.WriteString("Available Knowledge Base Articles:\n\n")
+
+        for _, article := range articles </span><span class="cov0" title="0">{
+                builder.WriteString(fmt.Sprintf("Article ID: %d\n", article.ID))
+                builder.WriteString(fmt.Sprintf("Title: %s\n", article.Title))
+                builder.WriteString(fmt.Sprintf("Content: %s\n\n", article.Content))
+        }</span>
+
+        <span class="cov0" title="0">return builder.String()</span>
+}
+
+// buildPrompt creates the AI prompt
+func (g *GeminiService) buildPrompt(query string, articlesContext string) string <span class="cov0" title="0">{
+        return fmt.Sprintf(`You are an IT support assistant helping users find answers to their technical questions.
+
+%s
+
+User Query: "%s"
+
+Please analyze the user's query and provide:
+
+1. SUMMARY: A concise, helpful answer based on the relevant articles above. If no articles are relevant, provide general guidance and suggest contacting IT support.
+
+2. RELEVANT_ARTICLES: List the Article IDs (numbers only, comma-separated) of articles that are most relevant to answering this query. If no articles are relevant, return "none".
+
+Format your response exactly as follows:
+SUMMARY: [Your concise answer here]
+RELEVANT_ARTICLES: [comma-separated Article IDs or "none"]
+
+Example:
+SUMMARY: To reset your password, go to the login page, click 'Forgot Password', enter your email, and follow the instructions sent to your email.
+RELEVANT_ARTICLES: 1,3
+
+Now analyze the user's query:`, articlesContext, query)
+}</span>
+
+// parseResponse parses the AI response to extract summary and relevant articles
+func (g *GeminiService) parseResponse(response string, articles []models.Article) (*AIAnalysisResult, error) <span class="cov0" title="0">{
+        lines := strings.Split(response, "\n")
+
+        var summary string
+        var relevantArticleIDs []int
+
+        for _, line := range lines </span><span class="cov0" title="0">{
+                line = strings.TrimSpace(line)
+
+                if strings.HasPrefix(line, "SUMMARY:") </span><span class="cov0" title="0">{
+                        summary = strings.TrimSpace(strings.TrimPrefix(line, "SUMMARY:"))
+                }</span> else<span class="cov0" title="0"> if strings.HasPrefix(line, "RELEVANT_ARTICLES:") </span><span class="cov0" title="0">{
+                        articlesStr := strings.TrimSpace(strings.TrimPrefix(line, "RELEVANT_ARTICLES:"))
+                        if articlesStr != "none" &amp;&amp; articlesStr != "" </span><span class="cov0" title="0">{
+                                articleStrs := strings.Split(articlesStr, ",")
+                                for _, articleStr := range articleStrs </span><span class="cov0" title="0">{
+                                        articleStr = strings.TrimSpace(articleStr)
+                                        if id, err := strconv.Atoi(articleStr); err == nil </span><span class="cov0" title="0">{
+                                                // Validate that the article ID exists
+                                                if g.articleExists(id, articles) </span><span class="cov0" title="0">{
+                                                        relevantArticleIDs = append(relevantArticleIDs, id)
+                                                }</span>
+                                        }
+                                }
+                        }
+                }
+        }
+
+        // Fallback if parsing failed
+        <span class="cov0" title="0">if summary == "" </span><span class="cov0" title="0">{
+                summary = "I found some information that might help you. Please review the relevant articles below, or contact IT support for further assistance."
+        }</span>
+
+        <span class="cov0" title="0">return &amp;AIAnalysisResult{
+                Summary:          summary,
+                RelevantArticles: relevantArticleIDs,
+        }, nil</span>
+}
+
+// articleExists checks if an article ID exists in the provided articles
+func (g *GeminiService) articleExists(id int, articles []models.Article) bool <span class="cov0" title="0">{
+        for _, article := range articles </span><span class="cov0" title="0">{
+                if article.ID == id </span><span class="cov0" title="0">{
+                        return true
+                }</span>
+        }
+        <span class="cov0" title="0">return false</span>
+}
+
+// Close closes the AI service client
+func (g *GeminiService) Close() error <span class="cov0" title="0">{
+        return g.client.Close()
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package ai
+
+import (
+        "event-to-insight/internal/models"
+        "strings"
+)
+
+// MockAIService implements AIServiceInterface for testing
+type MockAIService struct{}
+
+// NewMockAIService creates a new mock AI service
+func NewMockAIService() *MockAIService <span class="cov8" title="1">{
+        return &amp;MockAIService{}
+}</span>
+
+// AnalyzeQuery provides mock analysis of queries
+func (m *MockAIService) AnalyzeQuery(query string, articles []models.Article) (*AIAnalysisResult, error) <span class="cov8" title="1">{
+        query = strings.ToLower(query)
+
+        var relevantArticles []int
+        var summary string
+
+        // Simple keyword matching logic for mock
+        for _, article := range articles </span><span class="cov8" title="1">{
+                articleText := strings.ToLower(article.Title + " " + article.Content)
+
+                if strings.Contains(query, "password") &amp;&amp; strings.Contains(articleText, "password") </span><span class="cov8" title="1">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "vpn") &amp;&amp; strings.Contains(articleText, "vpn") </span><span class="cov8" title="1">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "email") &amp;&amp; strings.Contains(articleText, "email") </span><span class="cov8" title="1">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "printer") &amp;&amp; strings.Contains(articleText, "printer") </span><span class="cov0" title="0">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "software") &amp;&amp; strings.Contains(articleText, "software") </span><span class="cov0" title="0">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "backup") &amp;&amp; strings.Contains(articleText, "backup") </span><span class="cov0" title="0">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "antivirus") &amp;&amp; strings.Contains(articleText, "antivirus") </span><span class="cov0" title="0">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span> else<span class="cov8" title="1"> if strings.Contains(query, "remote") &amp;&amp; strings.Contains(articleText, "remote") </span><span class="cov0" title="0">{
+                        relevantArticles = append(relevantArticles, article.ID)
+                }</span>
+        }
+
+        // Generate summary based on query type
+        <span class="cov8" title="1">if strings.Contains(query, "password") </span><span class="cov8" title="1">{
+                summary = "To reset your password, go to the login page, click 'Forgot Password', enter your email address, and follow the instructions sent to your email. The reset link expires in 24 hours."
+        }</span> else<span class="cov8" title="1"> if strings.Contains(query, "vpn") </span><span class="cov8" title="1">{
+                summary = "To set up VPN connection, download the VPN client from the IT portal, install it with admin credentials, and connect to the 'Corporate-Main' server using your domain username and password."
+        }</span> else<span class="cov8" title="1"> if strings.Contains(query, "email") </span><span class="cov8" title="1">{
+                summary = "For email configuration, use IMAP: mail.company.com port 993 SSL and SMTP: mail.company.com port 587 STARTTLS. Ensure your username format is firstname.lastname@company.com."
+        }</span> else<span class="cov8" title="1"> if strings.Contains(query, "printer") </span><span class="cov0" title="0">{
+                summary = "For printer issues, ensure the printer is connected to the corporate network, install latest drivers, and add printer using IP address 192.168.1.100."
+        }</span> else<span class="cov8" title="1"> if len(relevantArticles) &gt; 0 </span><span class="cov0" title="0">{
+                summary = "I found relevant information in our knowledge base that should help with your query. Please review the articles below for detailed instructions."
+        }</span> else<span class="cov8" title="1"> {
+                summary = "I couldn't find specific information for your query in our knowledge base. Please contact IT support for further assistance, or try rephrasing your question."
+        }</span>
+
+        <span class="cov8" title="1">return &amp;AIAnalysisResult{
+                Summary:          summary,
+                RelevantArticles: relevantArticles,
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package config
+
+import (
+        "os"
+)
+
+// Config holds the application configuration
+type Config struct {
+        Port      string
+        DBPath    string
+        GeminiKey string
+        UseMockAI bool
+}
+
+// LoadConfig loads configuration from environment variables
+func LoadConfig() *Config <span class="cov0" title="0">{
+        return &amp;Config{
+                Port:      getEnv("PORT", "8080"),
+                DBPath:    getEnv("DB_PATH", "./data.db"),
+                GeminiKey: getEnv("GEMINI_API_KEY", ""),
+                UseMockAI: getEnv("USE_MOCK_AI", "true") == "true",
+        }
+}</span>
+
+// getEnv gets an environment variable with a default value
+func getEnv(key, defaultValue string) string <span class="cov0" title="0">{
+        if value := os.Getenv(key); value != "" </span><span class="cov0" title="0">{
+                return value
+        }</span>
+        <span class="cov0" title="0">return defaultValue</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package database
+
+import (
+        "database/sql"
+        "encoding/json"
+        "event-to-insight/internal/models"
+        "fmt"
+        "strings"
+        "time"
+
+        _ "github.com/mattn/go-sqlite3"
+)
+
+// SQLiteDB implements DatabaseInterface for SQLite
+type SQLiteDB struct {
+        db *sql.DB
+}
+
+// NewSQLiteDB creates a new SQLite database instance
+func NewSQLiteDB(dbPath string) (*SQLiteDB, error) <span class="cov8" title="1">{
+        db, err := sql.Open("sqlite3", dbPath)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to open database: %w", err)
+        }</span>
+
+        // Enable foreign key constraints
+        <span class="cov8" title="1">if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">sqliteDB := &amp;SQLiteDB{db: db}
+        return sqliteDB, nil</span>
+}
+
+// Initialize creates the database tables and seeds initial data
+func (s *SQLiteDB) Initialize() error <span class="cov8" title="1">{
+        if err := s.createTables(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create tables: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if err := s.seedArticles(); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to seed articles: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// createTables creates the necessary database tables
+func (s *SQLiteDB) createTables() error <span class="cov8" title="1">{
+        schema := `
+        CREATE TABLE IF NOT EXISTS articles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS queries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS search_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query_id INTEGER NOT NULL,
+                ai_summary_answer TEXT NOT NULL,
+                ai_relevant_articles TEXT NOT NULL, -- JSON array
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (query_id) REFERENCES queries(id)
+        );
+        `
+
+        _, err := s.db.Exec(schema)
+        return err
+}</span>
+
+// seedArticles populates the database with initial articles
+func (s *SQLiteDB) seedArticles() error <span class="cov8" title="1">{
+        // Check if articles already exist
+        var count int
+        err := s.db.QueryRow("SELECT COUNT(*) FROM articles").Scan(&amp;count)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">if count &gt; 0 </span><span class="cov0" title="0">{
+                return nil // Articles already seeded
+        }</span>
+
+        <span class="cov8" title="1">articles := []models.Article{
+                {
+                        Title:   "Password Reset Instructions",
+                        Content: "To reset your password: 1) Go to the login page 2) Click 'Forgot Password' 3) Enter your email address 4) Check your email for reset instructions 5) Follow the link and create a new password. The reset link expires in 24 hours.",
+                },
+                {
+                        Title:   "VPN Connection Setup",
+                        Content: "Setting up VPN connection: 1) Download the VPN client from the IT portal 2) Install using admin credentials 3) Use your domain username and password 4) Connect to the 'Corporate-Main' server 5) Verify connection by accessing internal resources. Contact IT if you experience connectivity issues.",
+                },
+                {
+                        Title:   "Software Installation Guidelines",
+                        Content: "For software installation: 1) Check the approved software list on the IT portal 2) Submit a software request ticket if not approved 3) Admin rights are required for installation 4) IT will remotely install if you don't have admin access 5) All installations must be from official vendors only.",
+                },
+                {
+                        Title:   "Email Configuration Troubleshooting",
+                        Content: "Email setup issues: 1) Verify server settings - IMAP: mail.company.com port 993 SSL, SMTP: mail.company.com port 587 STARTTLS 2) Check username format: firstname.lastname@company.com 3) Ensure password is current 4) Clear email cache and restart client 5) For mobile devices, use app-specific passwords.",
+                },
+                {
+                        Title:   "Multi-Factor Authentication Setup",
+                        Content: "MFA setup process: 1) Install Microsoft Authenticator app 2) Log into company portal 3) Navigate to Security Settings 4) Click 'Add Authentication Method' 5) Scan QR code with authenticator app 6) Enter verification code 7) MFA is now required for all company logins.",
+                },
+                {
+                        Title:   "Printer Connection Issues",
+                        Content: "Printer troubleshooting: 1) Ensure printer is connected to corporate network 2) Install latest printer drivers from manufacturer website 3) Add printer using IP address: 192.168.1.100 4) Check print queue for stuck jobs 5) Restart print spooler service if needed 6) For Mac users, use CUPS interface.",
+                },
+                {
+                        Title:   "File Share Access Problems",
+                        Content: "File share access: 1) Connect using \\\\fileserver\\shared 2) Use domain credentials when prompted 3) Map network drive for easier access 4) Check group membership for folder permissions 5) Clear credential cache if authentication fails 6) Contact IT for permission changes.",
+                },
+                {
+                        Title:   "Remote Desktop Configuration",
+                        Content: "Remote desktop setup: 1) Enable Remote Desktop on target computer 2) Add user to 'Remote Desktop Users' group 3) Configure firewall to allow RDP (port 3389) 4) Use Computer Name or IP address to connect 5) For external access, use VPN first 6) Use Network Level Authentication for security.",
+                },
+                {
+                        Title:   "Antivirus Software Management",
+                        Content: "Antivirus management: 1) Corporate antivirus is automatically deployed 2) Do not install additional antivirus software 3) Scans run automatically daily at 2 AM 4) Quarantine notifications appear in system tray 5) Report false positives to IT immediately 6) Never disable real-time protection.",
+                },
+                {
+                        Title:   "Data Backup and Recovery",
+                        Content: "Backup procedures: 1) OneDrive syncs user documents automatically 2) Critical data should be stored in designated share folders 3) Personal desktop/downloads are not backed up 4) File recovery available for 90 days 5) For urgent recovery, submit priority ticket 6) Test restore procedures quarterly.",
+                },
+        }
+
+        for _, article := range articles </span><span class="cov8" title="1">{
+                _, err := s.db.Exec(
+                        "INSERT INTO articles (title, content) VALUES (?, ?)",
+                        article.Title, article.Content,
+                )
+                if err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to insert article '%s': %w", article.Title, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetAllArticles retrieves all articles from the database
+func (s *SQLiteDB) GetAllArticles() ([]models.Article, error) <span class="cov8" title="1">{
+        rows, err := s.db.Query("SELECT id, title, content FROM articles")
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var articles []models.Article
+        for rows.Next() </span><span class="cov8" title="1">{
+                var article models.Article
+                err := rows.Scan(&amp;article.ID, &amp;article.Title, &amp;article.Content)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">articles = append(articles, article)</span>
+        }
+
+        <span class="cov8" title="1">return articles, rows.Err()</span>
+}
+
+// GetArticleByID retrieves a specific article by ID
+func (s *SQLiteDB) GetArticleByID(id int) (*models.Article, error) <span class="cov8" title="1">{
+        var article models.Article
+        err := s.db.QueryRow(
+                "SELECT id, title, content FROM articles WHERE id = ?", id,
+        ).Scan(&amp;article.ID, &amp;article.Title, &amp;article.Content)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;article, nil</span>
+}
+
+// GetArticlesByIDs retrieves multiple articles by their IDs
+func (s *SQLiteDB) GetArticlesByIDs(ids []int) ([]models.Article, error) <span class="cov8" title="1">{
+        if len(ids) == 0 </span><span class="cov0" title="0">{
+                return []models.Article{}, nil
+        }</span>
+
+        // Build placeholders for IN clause
+        <span class="cov8" title="1">placeholders := strings.Repeat("?,", len(ids)-1) + "?"
+        query := fmt.Sprintf("SELECT id, title, content FROM articles WHERE id IN (%s)", placeholders)
+
+        // Convert int slice to interface slice
+        args := make([]interface{}, len(ids))
+        for i, id := range ids </span><span class="cov8" title="1">{
+                args[i] = id
+        }</span>
+
+        <span class="cov8" title="1">rows, err := s.db.Query(query, args...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var articles []models.Article
+        for rows.Next() </span><span class="cov8" title="1">{
+                var article models.Article
+                err := rows.Scan(&amp;article.ID, &amp;article.Title, &amp;article.Content)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">articles = append(articles, article)</span>
+        }
+
+        <span class="cov8" title="1">return articles, rows.Err()</span>
+}
+
+// CreateQuery creates a new query record
+func (s *SQLiteDB) CreateQuery(query string) (*models.Query, error) <span class="cov8" title="1">{
+        result, err := s.db.Exec(
+                "INSERT INTO queries (query, created_at) VALUES (?, ?)",
+                query, time.Now(),
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return s.GetQueryByID(int(id))</span>
+}
+
+// GetQueryByID retrieves a query by ID
+func (s *SQLiteDB) GetQueryByID(id int) (*models.Query, error) <span class="cov8" title="1">{
+        var query models.Query
+        err := s.db.QueryRow(
+                "SELECT id, query, created_at FROM queries WHERE id = ?", id,
+        ).Scan(&amp;query.ID, &amp;query.Query, &amp;query.CreatedAt)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;query, nil</span>
+}
+
+// CreateSearchResult creates a new search result record
+func (s *SQLiteDB) CreateSearchResult(queryID int, summary string, relevantArticleIDs []int) (*models.SearchResult, error) <span class="cov8" title="1">{
+        // Convert slice to JSON
+        articleIDsJSON, err := json.Marshal(relevantArticleIDs)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to marshal article IDs: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">result, err := s.db.Exec(
+                "INSERT INTO search_results (query_id, ai_summary_answer, ai_relevant_articles, created_at) VALUES (?, ?, ?, ?)",
+                queryID, summary, string(articleIDsJSON), time.Now(),
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return s.GetSearchResultByID(int(id))</span>
+}
+
+// GetSearchResultByID retrieves a search result by ID
+func (s *SQLiteDB) GetSearchResultByID(id int) (*models.SearchResult, error) <span class="cov8" title="1">{
+        var result models.SearchResult
+        var articleIDsJSON string
+
+        err := s.db.QueryRow(
+                "SELECT id, query_id, ai_summary_answer, ai_relevant_articles, created_at FROM search_results WHERE id = ?", id,
+        ).Scan(&amp;result.ID, &amp;result.QueryID, &amp;result.AISummaryAnswer, &amp;articleIDsJSON, &amp;result.CreatedAt)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Parse JSON array
+        <span class="cov8" title="1">err = json.Unmarshal([]byte(articleIDsJSON), &amp;result.AIRelevantArticles)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal article IDs: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;result, nil</span>
+}
+
+// GetSearchResultByQueryID retrieves a search result by query ID
+func (s *SQLiteDB) GetSearchResultByQueryID(queryID int) (*models.SearchResult, error) <span class="cov8" title="1">{
+        var result models.SearchResult
+        var articleIDsJSON string
+
+        err := s.db.QueryRow(
+                "SELECT id, query_id, ai_summary_answer, ai_relevant_articles, created_at FROM search_results WHERE query_id = ?", queryID,
+        ).Scan(&amp;result.ID, &amp;result.QueryID, &amp;result.AISummaryAnswer, &amp;articleIDsJSON, &amp;result.CreatedAt)
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Parse JSON array
+        <span class="cov8" title="1">err = json.Unmarshal([]byte(articleIDsJSON), &amp;result.AIRelevantArticles)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to unmarshal article IDs: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;result, nil</span>
+}
+
+// Close closes the database connection
+func (s *SQLiteDB) Close() error <span class="cov8" title="1">{
+        return s.db.Close()
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package handlers
+
+import (
+        "encoding/json"
+        "event-to-insight/internal/models"
+        "event-to-insight/internal/service"
+        "net/http"
+        "strconv"
+        "strings"
+
+        "github.com/go-chi/chi/v5"
+)
+
+// SearchHandler handles search-related HTTP requests
+type SearchHandler struct {
+        searchService *service.SearchService
+}
+
+// NewSearchHandler creates a new search handler
+func NewSearchHandler(searchService *service.SearchService) *SearchHandler <span class="cov8" title="1">{
+        return &amp;SearchHandler{
+                searchService: searchService,
+        }
+}</span>
+
+// SearchQuery handles POST /search-query
+func (h *SearchHandler) SearchQuery(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var req models.SearchRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                h.sendErrorResponse(w, http.StatusBadRequest, "Invalid JSON", err.Error())
+                return
+        }</span>
+
+        // Validate request
+        <span class="cov8" title="1">if strings.TrimSpace(req.Query) == "" </span><span class="cov8" title="1">{
+                h.sendErrorResponse(w, http.StatusBadRequest, "Query is required", "")
+                return
+        }</span>
+
+        // Process search query
+        <span class="cov8" title="1">response, err := h.searchService.ProcessSearchQuery(req.Query)
+        if err != nil </span><span class="cov0" title="0">{
+                h.sendErrorResponse(w, http.StatusInternalServerError, "Failed to process search query", err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">h.sendJSONResponse(w, http.StatusOK, response)</span>
+}
+
+// GetArticle handles GET /articles/{id}
+func (h *SearchHandler) GetArticle(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        idStr := chi.URLParam(r, "id")
+        id, err := strconv.Atoi(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                h.sendErrorResponse(w, http.StatusBadRequest, "Invalid article ID", "")
+                return
+        }</span>
+
+        <span class="cov0" title="0">article, err := h.searchService.GetArticleByID(id)
+        if err != nil </span><span class="cov0" title="0">{
+                h.sendErrorResponse(w, http.StatusNotFound, "Article not found", "")
+                return
+        }</span>
+
+        <span class="cov0" title="0">h.sendJSONResponse(w, http.StatusOK, article)</span>
+}
+
+// GetAllArticles handles GET /articles
+func (h *SearchHandler) GetAllArticles(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        articles, err := h.searchService.GetAllArticles()
+        if err != nil </span><span class="cov0" title="0">{
+                h.sendErrorResponse(w, http.StatusInternalServerError, "Failed to get articles", err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">h.sendJSONResponse(w, http.StatusOK, articles)</span>
+}
+
+// HealthCheck handles GET /health
+func (h *SearchHandler) HealthCheck(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        response := map[string]string{
+                "status":  "healthy",
+                "service": "event-to-insight-backend",
+        }
+        h.sendJSONResponse(w, http.StatusOK, response)
+}</span>
+
+// sendJSONResponse sends a JSON response
+func (h *SearchHandler) sendJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(statusCode)
+        json.NewEncoder(w).Encode(data)
+}</span>
+
+// sendErrorResponse sends an error response
+func (h *SearchHandler) sendErrorResponse(w http.ResponseWriter, statusCode int, error string, message string) <span class="cov8" title="1">{
+        response := models.ErrorResponse{
+                Error:   error,
+                Message: message,
+        }
+        h.sendJSONResponse(w, statusCode, response)
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package router
+
+import (
+        "event-to-insight/internal/handlers"
+        "time"
+
+        "github.com/go-chi/chi/v5"
+        "github.com/go-chi/chi/v5/middleware"
+        "github.com/go-chi/cors"
+)
+
+// SetupRouter sets up the HTTP router with all routes
+func SetupRouter(searchHandler *handlers.SearchHandler) *chi.Mux <span class="cov0" title="0">{
+        r := chi.NewRouter()
+
+        // Middleware
+        r.Use(middleware.Logger)
+        r.Use(middleware.Recoverer)
+        r.Use(middleware.Timeout(60 * time.Second))
+
+        // CORS configuration
+        r.Use(cors.Handler(cors.Options{
+                AllowedOrigins: []string{"*"},
+                AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+                AllowedHeaders: []string{
+                        "Accept",
+                        "Accept-Language",
+                        "Access-Control-Request-Headers",
+                        "Access-Control-Request-Method",
+                        "Connection",
+                        "Content-Type",
+                        "Origin",
+                        "Referer",
+                        "Sec-Fetch-Dest",
+                        "Sec-Fetch-Mode",
+                        "Sec-Fetch-Site",
+                        "User-Agent",
+                        "sec-ch-ua-platform",
+                        "sec-ch-ua",
+                        "sec-ch-ua-mobile"},
+                ExposedHeaders:   []string{"Link"},
+                AllowCredentials: true,
+                MaxAge:           300,
+        }))
+
+        // Routes
+        r.Route("/api", func(r chi.Router) </span><span class="cov0" title="0">{
+                // Health check
+                r.Get("/health", searchHandler.HealthCheck)
+
+                // Search endpoints
+                r.Post("/search-query", searchHandler.SearchQuery)
+
+                // Article endpoints
+                r.Get("/articles", searchHandler.GetAllArticles)
+                r.Get("/articles/{id}", searchHandler.GetArticle)
+        }</span>)
+
+        <span class="cov0" title="0">return r</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package service
+
+import (
+        "event-to-insight/internal/ai"
+        "event-to-insight/internal/database"
+        "event-to-insight/internal/models"
+        "fmt"
+)
+
+// SearchService handles search operations
+type SearchService struct {
+        db        database.DatabaseInterface
+        aiService ai.AIServiceInterface
+}
+
+// NewSearchService creates a new search service
+func NewSearchService(db database.DatabaseInterface, aiService ai.AIServiceInterface) *SearchService <span class="cov0" title="0">{
+        return &amp;SearchService{
+                db:        db,
+                aiService: aiService,
+        }
+}</span>
+
+// ProcessSearchQuery processes a search query and returns results
+func (s *SearchService) ProcessSearchQuery(queryText string) (*models.SearchResponse, error) <span class="cov0" title="0">{
+        // Create query record
+        query, err := s.db.CreateQuery(queryText)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to create query: %w", err)
+        }</span>
+
+        // Get all articles for AI analysis
+        <span class="cov0" title="0">articles, err := s.db.GetAllArticles()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get articles: %w", err)
+        }</span>
+
+        // Analyze query with AI
+        <span class="cov0" title="0">aiResult, err := s.aiService.AnalyzeQuery(queryText, articles)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to analyze query: %w", err)
+        }</span>
+
+        // Save search result
+        <span class="cov0" title="0">_, err = s.db.CreateSearchResult(query.ID, aiResult.Summary, aiResult.RelevantArticles)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to save search result: %w", err)
+        }</span>
+
+        // Get relevant articles details
+        <span class="cov0" title="0">relevantArticles, err := s.db.GetArticlesByIDs(aiResult.RelevantArticles)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get relevant articles: %w", err)
+        }</span>
+
+        // Build response
+        <span class="cov0" title="0">response := &amp;models.SearchResponse{
+                Query:              queryText,
+                AISummaryAnswer:    aiResult.Summary,
+                AIRelevantArticles: relevantArticles,
+                QueryID:            query.ID,
+                Timestamp:          query.CreatedAt,
+        }
+
+        return response, nil</span>
+}
+
+// GetArticleByID retrieves a specific article
+func (s *SearchService) GetArticleByID(id int) (*models.Article, error) <span class="cov0" title="0">{
+        return s.db.GetArticleByID(id)
+}</span>
+
+// GetAllArticles retrieves all articles
+func (s *SearchService) GetAllArticles() ([]models.Article, error) <span class="cov0" title="0">{
+        return s.db.GetAllArticles()
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
