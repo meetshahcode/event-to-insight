@@ -3,7 +3,7 @@ import SearchBar from './components/SearchBar';
 import SearchResults from './components/SearchResults';
 import ArticleModal from './components/ArticleModal';
 import { SearchResponse, Article } from './services/api';
-import { HelpCircle, Github, Server } from 'lucide-react';
+import { HelpCircle, Github, Server, RotateCcw } from 'lucide-react';
 
 function App() {
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
@@ -41,6 +41,14 @@ function App() {
     setSelectedArticle(null);
   };
 
+  const handleReset = () => {
+    setSearchResult(null);
+    setError('');
+    setNoResultsMessage('');
+    setSelectedArticle(null);
+    setIsModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -61,6 +69,16 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {(searchResult || error || noResultsMessage) && (
+                <button
+                  onClick={handleReset}
+                  className="flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                  title="Reset to default state"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Reset</span>
+                </button>
+              )}
               <a
                 href="http://localhost:8080/api/health"
                 target="_blank"
