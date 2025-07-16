@@ -413,12 +413,13 @@ event-to-insight/
 1. Adopt PostgreSQL
 2. Restructure Codebase
 3. adding auth layer after few free requests
-4. we can also utialze opsenserach-based or vactor base dsearch so that we can give AI more filter context/Articles OR we can build own model based on exisitng model by giving our context on every new Article
+4. we can also utilize opensearch-based or vector based search so that we can give AI more filter context/Articles OR we can build our own model based on existing model by giving our context on every new Article
+5. Conduct a thorough code review to identify and refactor inefficient logic, improve error handling, and enhance code readability and maintainability.
 
 
 ### frontend
 
-1. By making more sutaiable UX
+1. By making more suitable UX
 2. by adding animation
 3. Restructure Codebase
 
